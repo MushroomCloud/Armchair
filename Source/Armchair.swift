@@ -1421,7 +1421,7 @@ open class Manager : ArmchairManager {
     fileprivate func rateApp() {
 
         if let bundleVersion = self.readBundleVersion() {
-            userDefaultsObject?.setObject(bundleVersion, forKey: keyForArmchairKeyType(.LastVersionRated))
+            userDefaultsObject?.setObject(bundleVersion as NSString, forKey: keyForArmchairKeyType(.LastVersionRated))
         }
         userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedCurrentVersion))
         userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedAnyVersion))
