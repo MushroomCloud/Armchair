@@ -369,7 +369,8 @@ public func resetDefaults() {
     Manager.defaultManager.daysUntilPrompt                  = 30
     Manager.defaultManager.daysBeforeReminding              = 1
     Manager.defaultManager.shouldPromptIfRated              = true
-    Manager.defaultManager.significantEventsUntilPrompt     = 20
+    Manager.defaultManager.usesUntilPrompt                  = 20
+    Manager.defaultManager.significantEventsUntilPrompt     = 0
     Manager.defaultManager.tracksNewVersions                = true
     Manager.defaultManager.useMainAppBundleForLocalizations = false
     Manager.defaultManager.affiliateCode                    = Manager.defaultManager.defaultAffiliateCode()
