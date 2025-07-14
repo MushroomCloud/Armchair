@@ -1191,8 +1191,6 @@ open class Manager : ArmchairManager {
             if timeSinceReminderRequest < timeUntilReminder {
                 return false
             }
-        } else {
-            return false
         }
         
         // if we have a global set to not show if the end-user has already rated once, and the developer has not opted out of displaying on minor updates
