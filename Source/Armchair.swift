@@ -341,9 +341,8 @@ public func resetAllCounters() {
 
     let currentVersionKey = keyForArmchairKeyType(ArmchairKey.CurrentVersion)
     let trackingVersion: String? = userDefaults.stringForKey(currentVersionKey)
-    let bundleVersionKey = kCFBundleVersionKey as String
-    let currentVersion = Bundle.main.object(forInfoDictionaryKey: bundleVersionKey) as? String
-    
+    let currentVersion = Manager.defaultManager.readBundleVersion()
+
     userDefaults.setObject(trackingVersion as AnyObject?, forKey: keyForArmchairKeyType(ArmchairKey.PreviousVersion))
     userDefaults.setObject(userDefaults.objectForKey(keyForArmchairKeyType(ArmchairKey.RatedCurrentVersion)), forKey: keyForArmchairKeyType(ArmchairKey.PreviousVersionRated))
     userDefaults.setObject(userDefaults.objectForKey(keyForArmchairKeyType(ArmchairKey.DeclinedToRate)), forKey: keyForArmchairKeyType(ArmchairKey.PreviousVersionDeclinedToRate))
@@ -700,6 +699,7 @@ public enum ArmchairKey: String, CustomStringConvertible {
     case SignificantEventCount                  = "Significant Event Count"
     case CurrentVersion                         = "Current Version"
     case RatedCurrentVersion                    = "Rated Current Version"
+    case LastVersionRated                       = "Last Version Rated"
     case DeclinedToRate                         = "Declined To Rate"
     case ReminderRequestDate                    = "Reminder Request Date"
     case PreviousVersion                        = "Previous Version"
@@ -709,8 +709,8 @@ public enum ArmchairKey: String, CustomStringConvertible {
     case AppiraterMigrationCompleted            = "Appirater Migration Completed"
     case UAAppReviewManagerMigrationCompleted   = "UAAppReviewManager Migration Completed"
     
-    static let allValues = [FirstUseDate, UseCount, SignificantEventCount, CurrentVersion, RatedCurrentVersion, DeclinedToRate, ReminderRequestDate, PreviousVersion, PreviousVersionRated, PreviousVersionDeclinedToRate, RatedAnyVersion, AppiraterMigrationCompleted, UAAppReviewManagerMigrationCompleted]
-    
+    static let allValues = [FirstUseDate, UseCount, SignificantEventCount, CurrentVersion, RatedCurrentVersion, LastVersionRated, DeclinedToRate, ReminderRequestDate, PreviousVersion, PreviousVersionRated, PreviousVersionDeclinedToRate, RatedAnyVersion, AppiraterMigrationCompleted, UAAppReviewManagerMigrationCompleted]
+
     public var description : String {
         get {
             return self.rawValue
@@ -910,6 +910,7 @@ open class Manager : ArmchairManager {
     fileprivate lazy var armchairKeySignificantEventCount: String                = self.defaultArmchairKeySignificantEventCount()
     fileprivate lazy var armchairKeyCurrentVersion: String                       = self.defaultArmchairKeyCurrentVersion()
     fileprivate lazy var armchairKeyRatedCurrentVersion: String                  = self.defaultArmchairKeyRatedCurrentVersion()
+    fileprivate lazy var armchairKeyLastVersionRated: String                     = self.defaultArmchairKeyLastVersionRated()
     fileprivate lazy var armchairKeyDeclinedToRate: String                       = self.defaultArmchairKeyDeclinedToRate()
     fileprivate lazy var armchairKeyReminderRequestDate: String                  = self.defaultArmchairKeyReminderRequestDate()
     fileprivate lazy var armchairKeyPreviousVersion: String                      = self.defaultArmchairKeyPreviousVersion()
@@ -924,6 +925,7 @@ open class Manager : ArmchairManager {
     fileprivate func defaultArmchairKeySignificantEventCount() -> String                 { return "ArmchairSignificantEventCount" }
     fileprivate func defaultArmchairKeyCurrentVersion() -> String                        { return "ArmchairKeyCurrentVersion" }
     fileprivate func defaultArmchairKeyRatedCurrentVersion() -> String                   { return "ArmchairRatedCurrentVersion" }
+    fileprivate func defaultArmchairKeyLastVersionRated() -> String                      { return "ArmchairLastVersionRated" }
     fileprivate func defaultArmchairKeyDeclinedToRate() -> String                        { return "ArmchairKeyDeclinedToRate" }
     fileprivate func defaultArmchairKeyReminderRequestDate() -> String                   { return "ArmchairReminderRequestDate" }
     fileprivate func defaultArmchairKeyPreviousVersion() -> String                       { return "ArmchairPreviousVersion" }
@@ -1027,10 +1029,9 @@ open class Manager : ArmchairManager {
     
     fileprivate func _incrementCountForKeyType(_ incrementKeyType: ArmchairKey) {
         let incrementKey = keyForArmchairKeyType(incrementKeyType)
-        
-        let bundleVersionKey = kCFBundleVersionKey as String
+
         // App's version. Not settable as the other ivars because that would be crazy.
-        let currentVersion = Bundle.main.object(forInfoDictionaryKey: bundleVersionKey) as? String
+        let currentVersion = self.readBundleVersion()
         if currentVersion == nil {
             assertionFailure("Could not read kCFBundleVersionKey from InfoDictionary")
             return
@@ -1230,6 +1231,9 @@ open class Manager : ArmchairManager {
         if #available(iOS 10.3, OSX 10.14, *), useStoreKitReviewPrompt {
             SKStoreReviewController.requestReview()
             // Assume this version is rated. There is no API to tell if the user actaully rated.
+            if let bundleVersion = self.readBundleVersion() {
+                userDefaultsObject?.setObject(bundleVersion as NSString, forKey: keyForArmchairKeyType(.LastVersionRated))
+            }
             userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedCurrentVersion))
             userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedAnyVersion))
             userDefaultsObject?.synchronize()
@@ -1408,7 +1412,10 @@ open class Manager : ArmchairManager {
     }
     
     fileprivate func rateApp() {
-        
+
+        if let bundleVersion = self.readBundleVersion() {
+            userDefaultsObject?.setObject(bundleVersion, forKey: keyForArmchairKeyType(.LastVersionRated))
+        }
         userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedCurrentVersion))
         userDefaultsObject?.setBool(true, forKey: keyForArmchairKeyType(ArmchairKey.RatedAnyVersion))
         userDefaultsObject?.synchronize()
@@ -1513,6 +1520,8 @@ open class Manager : ArmchairManager {
             return keyPrefix + armchairKeyCurrentVersion
         case .RatedCurrentVersion:
             return keyPrefix + armchairKeyRatedCurrentVersion
+        case .LastVersionRated:
+            return keyPrefix + armchairKeyLastVersionRated
         case .DeclinedToRate:
             return keyPrefix + armchairKeyDeclinedToRate
         case .ReminderRequestDate:
@@ -1544,6 +1553,8 @@ open class Manager : ArmchairManager {
             armchairKeyCurrentVersion = key as String
         case .RatedCurrentVersion:
             armchairKeyRatedCurrentVersion = key as String
+        case .LastVersionRated:
+            armchairKeyLastVersionRated = key as String
         case .DeclinedToRate:
             armchairKeyDeclinedToRate = key as String
         case .ReminderRequestDate:
@@ -1703,7 +1714,12 @@ open class Manager : ArmchairManager {
         
         return bundle
     }
-    
+
+    fileprivate func readBundleVersion() -> String? {
+        let bundleVersionKey = kCFBundleVersionKey as String
+        return Bundle.main.object(forInfoDictionaryKey: bundleVersionKey) as? String
+    }
+
     #if os(iOS)
     private static func topMostViewController(_ controller: UIViewController?) -> UIViewController? {
         var isPresenting: Bool = false
