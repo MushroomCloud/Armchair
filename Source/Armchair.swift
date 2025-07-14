@@ -1086,7 +1086,7 @@ open class Manager : ArmchairManager {
     }
     
     fileprivate func showPrompt(ifNecessary canPromptForRating: Bool) {
-        if canPromptForRating && connectedToNetwork() && ratingConditionsHaveBeenMet() {
+        if canPromptForRating && !shouldAvoidPromptDueToNoNetworkConnection() && ratingConditionsHaveBeenMet() {
             var shouldPrompt: Bool = true
             
             if let closure = shouldPromptClosure {
@@ -1127,7 +1127,7 @@ open class Manager : ArmchairManager {
     }
     
     fileprivate func showPrompt() {
-        if !appID.isEmpty && connectedToNetwork() && !userHasDeclinedToRate() && !userHasRatedCurrentVersion() {
+        if !appID.isEmpty && !shouldAvoidPromptDueToNoNetworkConnection() && !userHasDeclinedToRate() && !userHasRatedCurrentVersion() {
             showRatingAlert()
         }
     }
@@ -1687,7 +1687,13 @@ open class Manager : ArmchairManager {
     
     // MARK: -
     // MARK: Internet Connectivity
-    
+
+    private func shouldAvoidPromptDueToNoNetworkConnection() -> Bool {
+        if self.useStoreKitReviewPrompt { return false }
+
+        return !connectedToNetwork()
+    }
+
     private func connectedToNetwork() -> Bool {
         var zeroAddress = sockaddr_in()
         zeroAddress.sin_len = UInt8(MemoryLayout.size(ofValue: zeroAddress))
