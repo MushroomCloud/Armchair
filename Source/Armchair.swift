@@ -1860,6 +1860,7 @@ open class Manager : ArmchairManager {
     }
     
     init(appID: String) {
+        self.appID = appID
         super.init()
         setupNotifications()
     }
