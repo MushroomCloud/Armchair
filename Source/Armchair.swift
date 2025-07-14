@@ -1036,42 +1036,44 @@ open class Manager : ArmchairManager {
             assertionFailure("Could not read kCFBundleVersionKey from InfoDictionary")
             return
         }
-        
-        // Get the version number that we've been tracking thus far
-        let currentVersionKey = keyForArmchairKeyType(ArmchairKey.CurrentVersion)
-        var trackingVersion: String? = userDefaultsObject?.stringForKey(currentVersionKey)
-        // New install, or changed keys
-        if trackingVersion == nil {
-            trackingVersion = currentVersion
-            userDefaultsObject?.setObject(currentVersion as AnyObject?, forKey: currentVersionKey)
-        }
-        
-        debugLog("Tracking version: \(trackingVersion!)")
-        
-        if trackingVersion == currentVersion {
-            // Check if the first use date has been set. if not, set it.
-            let firstUseDateKey = keyForArmchairKeyType(ArmchairKey.FirstUseDate)
-            var timeInterval: Double? = userDefaultsObject?.doubleForKey(firstUseDateKey)
-            if 0 == timeInterval {
-                timeInterval = Date().timeIntervalSince1970
-                userDefaultsObject?.setObject(NSNumber(value: timeInterval!), forKey: firstUseDateKey)
-            }
-            
-            // Increment the key's count
-            var incrementKeyCount = userDefaultsObject!.integerForKey(incrementKey)
-            incrementKeyCount += 1
-            
-            userDefaultsObject?.setInteger(incrementKeyCount, forKey:incrementKey)
-            
-            debugLog("Incremented \(incrementKeyType): \(incrementKeyCount)")
 
-        } else if tracksNewVersions {
-            // it's a new version of the app, so restart tracking
-            resetAllCounters()
-            debugLog("Reset Tracking Version to: \(trackingVersion!)")
+        if let userDefaultsObject {
+            // Get the version number that we've been tracking thus far
+            let currentVersionKey = keyForArmchairKeyType(ArmchairKey.CurrentVersion)
+            var trackingVersion: String? = userDefaultsObject.stringForKey(currentVersionKey)
+            // New install, or changed keys
+            if trackingVersion == nil {
+                trackingVersion = currentVersion
+                userDefaultsObject.setObject(currentVersion as AnyObject?, forKey: currentVersionKey)
+            }
+
+            debugLog("Tracking version: \(trackingVersion!)")
+
+            if trackingVersion == currentVersion {
+                // Check if the first use date has been set. if not, set it.
+                let firstUseDateKey = keyForArmchairKeyType(ArmchairKey.FirstUseDate)
+                var timeInterval: Double? = userDefaultsObject.doubleForKey(firstUseDateKey)
+                if 0 == timeInterval {
+                    timeInterval = Date().timeIntervalSince1970
+                    userDefaultsObject.setObject(NSNumber(value: timeInterval!), forKey: firstUseDateKey)
+                }
+
+                // Increment the key's count
+                var incrementKeyCount = userDefaultsObject.integerForKey(incrementKey)
+                incrementKeyCount += 1
+
+                userDefaultsObject.setInteger(incrementKeyCount, forKey:incrementKey)
+
+                debugLog("Incremented \(incrementKeyType): \(incrementKeyCount)")
+
+            } else if tracksNewVersions {
+                // it's a new version of the app, so restart tracking
+                resetAllCounters()
+                debugLog("Reset Tracking Version to: \(trackingVersion!)")
+            }
+
+            userDefaultsObject.synchronize()
         }
-        
-        userDefaultsObject?.synchronize()
     }
     
     fileprivate func showPrompt(ifNecessary canPromptForRating: Bool) {
