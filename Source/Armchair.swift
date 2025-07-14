@@ -1245,7 +1245,16 @@ open class Manager : ArmchairManager {
     
     fileprivate func requestStoreKitReviewPrompt() -> Bool {
         if #available(iOS 10.3, OSX 10.14, *), useStoreKitReviewPrompt {
-            SKStoreReviewController.requestReview()
+            if #available(iOS 14.0, *) {
+                if let windowScene = UIApplication.shared.connectedScenes.first(where: { $0 is UIWindowScene }) as? UIWindowScene {
+                    SKStoreReviewController.requestReview(in: windowScene)
+                }
+                else {
+                    SKStoreReviewController.requestReview()
+                }
+            } else {
+                SKStoreReviewController.requestReview()
+            }
             // Assume this version is rated. There is no API to tell if the user actaully rated.
             if let bundleVersion = self.readBundleVersion() {
                 userDefaultsObject?.setObject(bundleVersion as NSString, forKey: keyForArmchairKeyType(.LastVersionRated))
