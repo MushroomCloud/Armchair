@@ -1168,9 +1168,16 @@ open class Manager : ArmchairManager {
             return false
         }
         
-        // Check if the user has already rated the app?
+        // Check if the user has already rated the app (while still supporting the `shouldPromptIfRated` option)
         if userHasRatedCurrentVersion() {
-            return false
+            if !shouldPromptIfRated {
+                return false
+            }
+
+            let lastVersionRated = userDefaultsObject?.stringForKey(keyForArmchairKeyType(ArmchairKey.LastVersionRated))
+            if let lastVersionRated, let currentVersion = readBundleVersion(), lastVersionRated == currentVersion {
+                return false
+            }
         }
         
         // If the user wanted to be reminded later, has enough time passed?
